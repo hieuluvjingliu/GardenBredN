@@ -1,0 +1,26 @@
+{
+  "name": "garden-bred-mvp",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "migrate": "node tools/migrate.js",
+    "postinstall": "npm rebuild better-sqlite3 --build-from-source"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "multer": "^1.4.5-lts.2",
+    "better-sqlite3": "^9.4.0",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.19.2",
+    "uuid": "^9.0.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

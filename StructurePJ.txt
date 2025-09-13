@@ -1,0 +1,19 @@
+GBweb/
+│── package.json          # cấu hình npm (dependencies, scripts)
+│── server.js             # server Node.js (Express + WS + SQLite)
+│── game.db
+├── public/               # client-side
+│   │── index.html        # giao diện game (Lobby, Farm, Shop, …)
+│   │── style.css         # style
+│   └── client.js         # logic client, kết nối API & WebSocket
+│   │──assets 
+│	│── Pots_Image
+│	│── Seed_Growing
+│	│──Seed_Mature
+│	│──Seed_Planted
+│	
+└── tools/                # quản lý database
+    │── breed_map.json
+    │── class_weights.json
+    │── schema.sql        # cấu trúc bảng SQLite
+    └── migrate.js        # script tạo DB từ schema

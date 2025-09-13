@@ -1,0 +1,218 @@
+<!doctype html> 
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Garden Bred Game — MVP</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Garden Bred Game — MVP</h1>
+
+    <div id="auth">
+      <input id="username" placeholder="Enter username" />
+      <button id="btnLogin">Login</button>
+    </div>
+
+    <!-- HUD (ẩn khi chưa đăng nhập) -->
+    <div id="hud" class="hidden">
+      <span class="pill">
+        <svg class="ico user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+        <b id="hudUser"></b>
+      </span>
+      <span class="pill">
+        <svg class="ico coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
+        <b id="hudCoins">0</b>
+      </span>
+    </div>
+  </header>
+
+  <nav class="tabs hidden" id="tabs">
+    <button data-tab="shop" class="active">🛒 Shop</button>
+    <button data-tab="inventory">📦 Kho</button>
+    <button data-tab="breed">🧬 Lai</button>
+    <button data-tab="online">🌐 Online</button>
+    <button data-tab="market">🪙 Chợ trời</button>
+    <button data-tab="farm">🌱 Khu trồng</button>
+    <button data-tab="gacha">🎰 Gacha</button>
+  </nav>
+
+  <!-- SHOP -->
+  <section id="shop" class="tab">
+    <h2>Shop</h2>
+    <div class="subtabs" id="shopTabs">
+      <button data-sub="shopSeeds" class="active">Seeds</button>
+      <button data-sub="shopPots">Pots</button>
+      <button data-sub="shopTrap">Trap</button>
+    </div>
+    <div id="shopSeeds" class="subtab"><div id="seedShopGrid" class="shop-grid"></div></div>
+    <div id="shopPots" class="subtab hidden"><div id="potShopGrid" class="shop-grid"></div></div>
+    <div id="shopTrap" class="subtab hidden">
+      <div class="card">
+        <h3>Trap</h3>
+        <p>Giá hiện tại: <b id="trapPrice">-</b>; Tối đa: <b id="trapMax">-</b></p>
+        <button id="buyTrap">Buy Trap</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- INVENTORY -->
+  <section id="inventory" class="tab hidden">
+    <h2>Kho</h2>
+    <div class="subtabs">
+      <button data-sub="inv-seeds" class="active">Seeds (Not Planted)</button>
+      <button data-sub="inv-pots">Pots</button>
+      <button data-sub="inv-mature">Mature</button>
+    </div>
+
+    <div id="inv-seeds" class="subtab">
+      <div class="row" id="invSeedFilters" style="gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <select id="fltInvState" title="State"> … </select>
+        <select id="fltInvClass" title="Class"> … </select>
+        <select id="fltInvMut" title="Mutation"> … </select>
+        <button id="btnPlantAll" class="btn">Plant All (filtered)</button>
+      </div>
+
+      <div class="inv-split">
+        <ul id="invMaster" class="inv-master"></ul>
+        <ul id="invDetail" class="inv-detail"></ul>
+      </div>
+
+      <h3>Sell to Shop</h3>
+      <div class="row">
+        <select id="sellSeedSelect"></select>
+        <button id="btnSellShop">Sell</button>
+      </div>
+    </div>
+
+    <div id="inv-pots" class="subtab hidden"><ul id="potInv" class="inv-grid"></ul></div>
+    <div id="inv-mature" class="subtab hidden">
+      <div class="row" id="batchListBar" style="gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <button id="btnSelectAllMat">Select All</button>
+        <input id="batchAskPrice" placeholder="ask price (áp cho tất cả)" />
+        <button id="btnListBatch">List Selected</button>
+      </div>
+      <ul id="matureByClass" class="inv-grid"></ul>
+    </div>
+  </section>
+
+  <!-- BREED -->
+  <section id="breed" class="tab hidden">
+    <h2>Lai</h2>
+    <div class="row">
+      <select id="breedSelectA"></select>
+      <select id="breedSelectB"></select>
+      <button id="btnBreed">Breed</button>
+      <button id="btnRandomBreed" class="btn btn-ghost">Random Breed</button>
+    </div>
+
+    <div id="breedFeed" class="breed-feed"></div>
+    <p id="breedOut" class="breed-out"></p>
+  </section>
+
+  <!-- ONLINE -->
+  <section id="online" class="tab hidden">
+    <h2>Online Players</h2>
+    <ul id="onlineList"></ul>
+  </section>
+
+  <!-- MARKET -->
+  <section id="market" class="tab hidden">
+    <h2>Chợ trời</h2>
+    <div class="row">
+      <select id="listSeedSelect"></select>
+      <input id="listPrice" placeholder="ask price" />
+      <button id="btnList">List</button>
+    </div>
+    <h3>Listings</h3>
+    <ul id="marketList"></ul>
+  </section>
+
+  <!-- FARM -->
+  <section id="farm" class="tab hidden">
+    <h2>Khu trồng</h2>
+    <div class="row" id="farmControls" style="gap:8px;flex-wrap:wrap;">
+      <button id="btnPrevFloor">↑ Floor</button>
+      <button id="btnNextFloor">↓ Floor</button>
+      <button id="btnHarvestAll">Harvest All Mature</button>
+      <span id="buyFloorPrice" style="margin-left:8px; display:none;"></span>
+      <button id="btnBuyFloor" style="display:none;">Buy Floor</button>
+    </div>
+
+    <!-- New filter groups -->
+    <div class="filter-group">
+      <div class="row">
+        <h3>Class</h3>
+        <button class="btn tiny danger" id="clearClassTicks">Remove all tick</button>
+      </div>
+      <div id="classFilter"></div>
+    </div>
+
+    <div class="filter-group">
+      <div class="row">
+        <h3>Pot</h3>
+        <button class="btn tiny danger" id="clearPotTicks">Remove all tick</button>
+      </div>
+      <div id="potFilter"></div>
+    </div>
+
+    <div class="filter-group">
+      <div class="row">
+        <h3>Mutation</h3>
+        <button class="btn tiny danger" id="clearMutTicks">Remove all tick</button>
+      </div>
+      <div id="mutFilter"></div>
+    </div>
+
+    <div id="floors"></div>
+  </section>
+
+  <!-- GACHA -->
+  <section id="gacha" class="tab hidden">
+    <h2>Gacha</h2>
+    <div id="gachaStatus" class="card">
+      <div class="row" style="gap:12px; flex-wrap:wrap;">
+        <div>Pulls: <b id="gachaTotalPulls">0</b></div>
+        <div>Step: <b id="gachaStep">0</b></div>
+        <div class="muted" id="gachaBaseHint">Base: 0</div>
+      </div>
+      <div class="row" style="gap:16px; flex-wrap:wrap; align-items:center; margin-top:8px;">
+        <div class="pity">
+          <div class="label">Pity 10 (Red/Gold guaranteed)</div>
+          <div class="progress" aria-label="Pity 10">
+            <div id="gachaPity10Bar" class="bar" style="width:0%"></div>
+          </div>
+          <small id="gachaPity10Text">0 / 10</small>
+        </div>
+        <div class="pity">
+          <div class="label">Pity 90 (Rainbow guaranteed)</div>
+          <div class="progress" aria-label="Pity 90">
+            <div id="gachaPity90Bar" class="bar" style="width:0%"></div>
+          </div>
+          <small id="gachaPity90Text">0 / 90</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Nguyên liệu cần</h3>
+      <p>Hiện cần: <b id="gachaNowReq">-</b></p>
+      <p>Các nguyên liệu tiếp theo: <span id="gachaQueue" class="muted">-</span></p>
+      <div class="muted" style="margin-top:6px;">Kho hiện có: <span id="gachaHaveCounts">-</span></div>
+    </div>
+
+    <div class="row" style="gap:8px; margin: 12px 0;">
+      <button id="btnGachaRoll" class="btn">Roll 1</button>
+      <button id="btnGachaRoll10" class="btn">Roll 10</button>
+    </div>
+
+    <div id="gachaResult" class="breed-feed"></div>
+  </section>
+</div>
+
+<div id="toastContainer" class="notify-wrap" aria-live="polite" aria-atomic="true"></div>
+<script src="/client.js" defer></script>
+</body>
+</html>
