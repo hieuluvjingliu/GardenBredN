@@ -175,7 +175,7 @@ select:focus,input:focus{outline:none;border-color:#6ee7ff;box-shadow:0 0 0 3px 
   left:50%;
   bottom:10px;
   transform:translateX(-50%);
-  width:50%;              /* cố định theo chiều ngang */
+  width:50%;
   height:auto;
   max-width:160px;
   object-fit:contain;
@@ -187,8 +187,8 @@ select:focus,input:focus{outline:none;border-color:#6ee7ff;box-shadow:0 0 0 3px 
   left:50%;
   transform:translateX(-50%);
   bottom:max(64px,32%);
-  width:60%;              /* luôn giới hạn theo chiều ngang */
-  height:auto;            /* scale giữ tỉ lệ */
+  width:60%;
+  height:auto;
   max-width:60%;
   max-height:60%;
   object-fit:contain;
@@ -220,7 +220,7 @@ select:focus,input:focus{outline:none;border-color:#6ee7ff;box-shadow:0 0 0 3px 
 .plot[data-mutation="pink"]   { border-color:#ec4899; box-shadow:0 0 18px #ec489955; }
 .plot[data-mutation="gold"]   { border-color:#f59e0b; box-shadow:0 0 20px #f59e0b66; }
 
-/* Red: pulsing highlight (single source of truth) */
+/* Red: pulsing highlight */
 .plot[data-mutation="red"]{
   border-color:#ef4444;
   box-shadow:0 0 20px #ef444488, inset 0 0 8px #ef444455;
@@ -231,7 +231,7 @@ select:focus,input:focus{outline:none;border-color:#6ee7ff;box-shadow:0 0 0 3px 
   50%{box-shadow:0 0 28px #ef4444aa, inset 0 0 12px #ef444477}
 }
 
-/* Rainbow: animated border + plant hue shift */
+/* ===== RAINBOW mutation (fixed) ===== */
 .plot[data-mutation="rainbow"]{
   border:2px solid transparent;
   background-image:
@@ -240,11 +240,40 @@ select:focus,input:focus{outline:none;border-color:#6ee7ff;box-shadow:0 0 0 3px 
   background-origin:border-box;
   background-clip:padding-box, border-box;
   animation: rainbowBorder 6s linear infinite;
+  position:relative;
 }
+/* Aura rainbow dưới sprite */
+.plot[data-mutation="rainbow"] .visual::after{
+  content:"";
+  position:absolute;
+  inset:-6px;
+  z-index:1;                 /* dưới sprite */
+  pointer-events:none;
+  opacity:.6;
+  filter:blur(8px);
+  background:conic-gradient(
+    from 0deg,
+    #ff004d, #ffa300, #ffe700, #00e05a, #00a2ff, #8a2be2, #ff004d
+  );
+  mix-blend-mode:screen;
+  animation: rainbowBorder 6s linear infinite;
+}
+/* Sprite luôn trên cùng & không bị filter phá màu */
+.plot .visual .sprite{position:relative;z-index:2;display:block;filter:none}
+.plot .visual img.plant{filter:none}
+
+/* Giữ imgIn + thêm rainbowShift; không che mất fade-in */
 .plot[data-mutation="rainbow"] img.plant{
-  animation: rainbowShift 5s linear infinite;
+  animation: imgIn .22s ease .08s both, rainbowShift 5s linear infinite;
   filter:saturate(1.35) brightness(1.08);
 }
+/* Trạng thái growing: giữ cả growPulse */
+.plot[data-stage="growing"][data-mutation="rainbow"] img.plant{
+  animation: imgIn .22s ease .08s both,
+             growPulse 2s ease-in-out infinite,
+             rainbowShift 5s linear infinite;
+}
+
 @keyframes rainbowBorder{0%{background-position:0% 50%}100%{background-position:200% 50%}}
 @keyframes rainbowShift{
   0%{ filter:hue-rotate(0deg)   saturate(1.35) brightness(1.08) }
