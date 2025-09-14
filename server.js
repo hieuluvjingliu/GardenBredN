@@ -1076,36 +1076,77 @@ app.get('/visit/floor', auth, (req, res) => {
   });
 });
 
-// ==== Visit: steal ====
+// ==== Visit: steal (FIXED, dùng auth + đúng schema) ====
 app.post('/visit/steal-plot', auth, (req, res) => {
-  const { targetUserId, floorId, plotId } = req.body;
-  if (!targetUserId || !floorId || !plotId) return res.status(400).json({ error: 'missing params' });
-  if (targetUserId === req.userId) return res.status(400).json({ error: 'cannot steal yourself' });
+  try {
+    const thiefId      = req.userId; // <-- từ middleware auth
+    const targetUserId = Number(req.body?.targetUserId);
+    const floorId      = Number(req.body?.floorId);
+    const plotId       = Number(req.body?.plotId);
 
-  const floor = getFloorByIdStmt.get(floorId);
-  if (!floor || floor.user_id !== targetUserId) return res.status(404).json({ error: 'floor not found' });
+    if (!thiefId)            return res.status(401).json({ error: 'Unauthorized' });
+    if (!targetUserId || !floorId || !plotId) {
+      return res.status(400).json({ error: 'missing params' });
+    }
+    if (targetUserId === thiefId) {
+      return res.status(400).json({ error: 'Cannot steal yourself' });
+    }
 
-  const used = useTrapOnFloorStmt.run(floorId).changes;
-  if (used > 0) {
-    const attacker = getUserByIdStmt.get(req.userId);
-    const penalty = Math.max(1, Math.floor(attacker.coins * 0.05));
-    subCoinsStmt.run(penalty, req.userId);
-    logAction(req.userId, 'trap_triggered', { targetUserId, floorId, penalty, plotId });
-    return res.json({ ok: false, trap: true, penalty });
+    // Lấy plot + floor để xác thực chủ sở hữu và trạng thái
+    const plot = db.prepare(`
+      SELECT p.id, p.floor_id, p.slot, p.stage, p.class, p.mutation, p.locked, p.mature_at,
+             f.user_id AS owner_id, f.trap_count AS trap_count
+      FROM plots p
+      JOIN floors f ON f.id = p.floor_id
+      WHERE p.id = ? AND p.floor_id = ? AND f.user_id = ?
+      LIMIT 1
+    `).get(plotId, floorId, targetUserId);
+
+    if (!plot) return res.status(404).json({ error: 'plot not found' });
+
+    // Ưu tiên TRAP: nếu có bẫy thì trừ 1 và báo trapped
+    if ((plot.trap_count || 0) > 0) {
+      try { useTrapOnFloorStmt.run(floorId); } catch {}
+      logAction(thiefId, 'steal_trapped', { targetUserId, floorId, plotId });
+      return res.json({ trapped: true, ok: false });
+    }
+
+    // Lock chặn
+    if (plot.locked) {
+      return res.json({ locked: true, ok: false });
+    }
+
+    // Phải mature mới trộm được
+    if (plot.stage !== 'mature') {
+      return res.json({ notMature: true, ok: false });
+    }
+
+    // Tính base theo class (đúng logic hiện dùng)
+    const base = floorPriceBase(plot.class);
+    const mutation = plot.mutation || null;
+
+    // Transaction: thêm seed mature cho kẻ trộm + reset plot về empty
+    const tx = db.transaction(() => {
+      // inventory_seeds: (user_id, class, base_price, is_mature, mutation)
+      invAddSeedStmt.run(thiefId, plot.class, base, 1, mutation);
+
+      // đưa plot về empty (chỉ clear seed, giữ pot nếu có)
+      clearPlotSeedOnlyStmt.run(plot.id);
+    });
+    tx();
+
+    logAction(thiefId, 'steal_success', {
+      from: targetUserId, floorId, plotId, class: plot.class, base, mutation
+    });
+
+    return res.json({ ok: true, class: plot.class });
+
+  } catch (e) {
+    console.error('[visit/steal-plot] fail', e);
+    return res.status(500).json({ error: 'server_error' });
   }
-
-  const p = db.prepare(`SELECT * FROM plots WHERE id = ?`).get(plotId);
-  if (!p || p.floor_id !== floorId) return res.status(404).json({ error: 'plot not found' });
-  if (p.stage !== 'mature') {
-    logAction(req.userId, 'steal_fail', { targetUserId, floorId, plotId, reason: 'not mature' });
-    return res.json({ ok: false, reason: 'not mature' });
-  }
-  const base = floorPriceBase(p.class);
-  invAddSeedStmt.run(req.userId, p.class, base, 1, p.mutation || null);
-  clearPlotSeedOnlyStmt.run(p.id);
-  logAction(req.userId, 'steal_success', { targetUserId, floorId, plotId: p.id, class: p.class, mutation: p.mutation || null });
-  res.json({ ok: true, class: p.class, mutation: p.mutation || null });
 });
+
 
 // ==== RESTORE (upload) — safe: integrity + backup + rollback ====
 const upload = multer({ storage: multer.memoryStorage() });

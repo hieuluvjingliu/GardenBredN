@@ -1285,11 +1285,37 @@ steal.title = 'Ăn trộm hạt mature từ plot này';
 const statsBox = el.querySelector('.stats');
 (statsBox || el).appendChild(steal);
 steal.addEventListener('click', async ()=>{
-try{
-const r = await api('/visit/steal-plot', { targetUserId: uid, floorId: floorId, plotId: p.id });
-// ...
-}catch(e){ showError(e,'steal'); }
+  if (steal.disabled) return;
+  steal.disabled = true;
+  steal.textContent = '...';
+  try{
+    const r = await api('/visit/steal-plot', { targetUserId: uid, floorId, plotId: p.id });
+
+    if (r.trapped) {
+      notifError('Bị Trap!', `Bạn dính bẫy khi trộm plot #${p.id}`);
+    } else if (r.locked) {
+      notifError('Plot bị khoá', `Không thể trộm plot #${p.id} (Lock ON)`);
+    } else if (r.notMature) {
+      notifError('Chưa mature', `Plot #${p.id} chưa mature`);
+    } else if (r.ok) {
+      notifInfo('Steal thành công', `Đã trộm #${r.seedId} (${r.class})`, `Từ user #${uid} · Floor ${floorId}`);
+    } else {
+      notifError('Steal thất bại', r.error || 'Unknown');
+    }
+
+    // Làm mới view online của user này để thấy plot đổi trạng thái
+    await renderVisitedFloor(uid, floorId);
+    // Làm mới state của chính mình (coins/kho… nếu có thay đổi)
+    await refresh({ soft:true });
+
+  }catch(e){
+    showError(e,'steal');
+  } finally {
+    steal.disabled = false;
+    steal.textContent = 'Steal';
+  }
 });
+
 }
       ensureObservers();
       timerVisObserver?.observe(el);

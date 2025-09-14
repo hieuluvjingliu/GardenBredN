@@ -11,9 +11,11 @@ GBweb/
 │	│── Seed_Growing
 │	│──Seed_Mature
 │	│──Seed_Planted
-│	
+│	│──	Pets_Image
+│
 └── tools/                # quản lý database
     │── breed_map.json
     │── class_weights.json
+    │── pets_weights.json
     │── schema.sql        # cấu trúc bảng SQLite
     └── migrate.js        # script tạo DB từ schema
